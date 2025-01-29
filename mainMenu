@@ -1,0 +1,19 @@
+#! /usr/bin/bash
+shopt -s extglob
+
+function createDataBase(){
+read -p "Please Enter Database name: " Dname
+if [[ -d $Dname ]]
+then
+echo Database is already exist
+elif [[ ! "$Dname" =~ ^[a-zA-Z0-9_[:space:]]+$ ]];
+then
+echo "Error: Database name must only contain letters, numbers, and underscores."
+else 
+mkdir "$Dname"
+echo Database is created 
+fi
+}
+
+
+
