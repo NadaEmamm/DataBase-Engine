@@ -14,6 +14,10 @@ mkdir "$Dname"
 echo Database is created 
 fi
 }
-
+function listDataBase(){
+find ~/Project -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
+}
+# استخدمنا find عشان هي افضل من اللوب لما يكون عندي اسم مكون من جزئين "nada emam" ف بالتالي هي بتعرف تهندل المسافات
+# استخدمنا mindepth مع  max عشان يحبلنا المجلدات الفرعيه بس يعني ميعرضليش بردو معاهم اسم Project واستخدمنا max عشان ميجبلناش المجلدت اللي جوا المجلدات الفرعيه 
 
 
