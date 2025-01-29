@@ -1,0 +1,27 @@
+#! /usr/bin/bash
+. ./mainMenu 
+. ./TableMenu
+
+echo "Select an option:"
+select choice in "Create Database" "List Database" "Connect To Database" "Drop Database"; 
+do
+case $choice in
+        "Create Database")
+         createDataBase
+            ;;
+        "List Database")
+          listDataBase
+            ;;
+        "Connect To Database")
+            ;;
+        "Drop Database")
+            echo "You selected to Drop Database"
+            ;;
+        *)
+            echo "Invalid option, please try again."
+            ;;
+    esac
+done
+
+
+
