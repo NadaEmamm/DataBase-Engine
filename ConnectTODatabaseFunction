@@ -1,0 +1,49 @@
+#!/usr/bin/bash
+# Define text colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+BLUE='\e[34m'
+MAGENTA='\e[35m'
+CYAN='\e[36m'
+WHITE='\e[37m'
+
+# Define background colors
+BG_RED='\e[41m'
+BG_GREEN='\e[42m'
+BG_YELLOW='\e[43m'
+BG_BLUE='\e[44m'
+BG_MAGENTA='\e[45m'
+BG_CYAN='\e[46m'
+BG_WHITE='\e[47m'
+
+# Text attributes
+BOLD='\e[1m'
+UNDERLINE='\e[4m'
+RESET='\e[0m' 
+parentDir="Databases"
+function ConnectToDB()
+ {
+ 	echo -e "${UNDERLINE}${BOLD}${MAGENTA}Select database:${RESET}"
+ 	listOfDBs=$(ls "Databases")
+ 	arrayOfDB=($listOfDBs)
+ 	PS3="Please enter your choice: "
+ 	select database in "${arrayOfDB[@]}" "Exit"
+	do
+	    if [[ $database == "Exit" ]]; then
+		echo "Exiting..."
+		break
+	    elif [[ -n $database ]]; then
+		echo "Connecting to database: $database"
+		fullPath="$parentDir/$database"
+		cd "$fullPath"
+		break
+	    else
+		echo "Invalid choice. Try again."
+	    fi
+	done
+
+ 	
+ }
+ 
+ ConnectToDB
