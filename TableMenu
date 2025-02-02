@@ -1,0 +1,71 @@
+#!/usr/bin/bash
+
+function createTable() {
+    read -p "Please Enter Table name: " Dname
+    if [[ -f $Dname ]]; then
+        echo "Table already exists."
+        return
+    elif [[ ! "$Dname" =~ ^[a-zA-Z0-9_[:space:]]+$ ]]; then
+        echo "Error: Table name must only contain letters, numbers, and underscores."
+        return
+    else 
+
+        touch $Dname
+        read -p "Please Enter number of columns: " colNum
+        declare -a colNames
+        declare -a colTypes
+        for ((i=1; i<=colNum; i++)); do   
+            read -p "Please Enter column ${i} name: " colName
+            colNames[$i]=$colName 
+            select choice in "String" "Number"; do
+                case $choice in
+                    "String")
+                        colTypes[$i]="String"
+                        break
+                        ;;
+                    "Number")
+                        colTypes[$i]="Number"
+                        break
+                        ;;
+                    *)
+                        echo "Invalid option, please try again."
+                        ;;
+                esac
+            done
+            read -p "Do you want to set this column as BK? (y/n): " bkResponse
+            if [[ $bkResponse == "y" ]]; then
+                colBK="yes"
+            elif [[ $bkResponse == "n" ]]; then
+                colBK="no"
+            else
+                echo "Invalid response for BK setting."
+            fi
+          if [[ $colBK == "yes" ]]
+          then
+          echo  "${colNames[$i]} : ${colTypes[$i]} : PK " >> "$Dname"-MetaData  
+          else
+          echo  "${colNames[$i]} : ${colTypes[$i]} " >> "$Dname"-MetaData  
+          fi
+          echo -n " ${colNames[$i]} :" >> "$Dname"
+          # -n to skip new line
+        done
+
+        echo "Table '$Dname' is created "
+    fi
+}
+
+
+function listTables(){
+ls $pwd
+}
+
+function dropTables(){
+        read -p "Please Enter Table Name : " colName
+        if [[ -f $colName ]]
+        then 
+        rm $colName
+        echo " $colName Table has been deleted."
+        else
+        echo "The Table Dose't Exists"
+        fi
+}
