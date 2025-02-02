@@ -1,0 +1,68 @@
+#!/usr/bin/bash
+
+shopt -s extglob
+
+parentDir="Databases"
+
+read -p "Enter table name: " tableName
+database="db2"
+fullPath="$parentDir/$database"
+
+cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
+while [[ ! -f "$tableName" ]]; do
+    echo "Error: Table does not exist!"
+    read -p "Enter table name: " tableName
+done
+columnNames=()
+dataTypes=()
+
+while IFS=' : ' read -r colName dataType pk; do
+    columnNames+=("$colName")
+    dataTypes+=("$dataType")
+done < "${tableName}-MetaData"
+
+read -p "Insert the data comma separated: " insertedRecord
+
+
+IFS="," read -r -a userValues <<< "$insertedRecord"
+
+
+while [[ ${#userValues[@]} -ne ${#dataTypes[@]} ]]; do
+    echo "Error: Mismatched number of values. Expected ${#dataTypes[@]} fields."
+    read -p "Insert the data comma separated: " insertedRecord
+    IFS="," read -r -a userValues <<< "$insertedRecord"
+    
+done
+
+
+validate_type() {
+    local value=$1
+    local type=$2
+
+    case "$type" in
+        number)    [[ "$value" =~ ^[0-9]+$ ]] || return 1 ;;
+        string) [[ "$value" =~ ^[a-zA-Z0-9_ ]+$ ]] || return 1 ;;
+        *)      echo "Error: Unknown data type '$type'"; return 1 ;;
+    esac
+
+    return 0
+}
+
+
+for i in "${!userValues[@]}"; do
+    value="${userValues[$i]}"
+    type="${dataTypes[$i]}"
+
+    if ! validate_type "$value" "$type"; then
+        echo "Error: Invalid value '$value' for column '${columnNames[$i]}' (expected $type)"
+        exit 1
+    fi
+done
+
+echo "$insertedRecord" >> "$tableName"
+echo -e "✅ Record added successfully!\n"
+
+
+echo "Table after adding the new record:"
+column -t -s "," "$tableName"
+
