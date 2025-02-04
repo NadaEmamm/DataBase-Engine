@@ -1,0 +1,52 @@
+#!/usr/bin/bash
+
+shopt -s extglob
+
+# Define text colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+BLUE='\e[34m'
+MAGENTA='\e[35m'
+CYAN='\e[36m'
+WHITE='\e[37m'
+
+# Define background colors
+BG_RED='\e[41m'
+BG_GREEN='\e[42m'
+BG_YELLOW='\e[43m'
+BG_BLUE='\e[44m'
+BG_MAGENTA='\e[45m'
+BG_CYAN='\e[46m'
+BG_WHITE='\e[47m'
+
+# Text attributes
+BOLD='\e[1m'
+UNDERLINE='\e[4m'
+RESET='\e[0m' 
+
+function SelectFromTableByID()
+{
+    parentDir="Databases"
+    database="db2"
+    fullPath="$parentDir/$database"
+    tableName=$1
+    cd "$fullPath" || { echo -e "${RED}Error: Failed to change directory to $fullPath${RESET}"; return 1; }
+
+
+    read -p "Enter ID: " id
+    while [[ -z "$id" || ! "$id" =~ ^[0-9]+$ ]]; do
+        echo -e "${RED}Error: ID must be an integer${RESET}"
+        read -p "Enter ID: " id
+    done
+    if ! grep -q "^$id," "$tableName"; then
+    	echo -e "${YELLOW}Record with ID $id not found.${RESET}"
+    	return 1	
+    fi
+    
+   awk -F"," -v id="$id" '$1 == id {print}' "$tableName"
+}
+
+
+SelectFromTableByID "usersTable"
+

@@ -1,0 +1,83 @@
+#!/usr/bin/bash
+
+shopt -s extglob
+
+# Define text colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+BLUE='\e[34m'
+MAGENTA='\e[35m'
+CYAN='\e[36m'
+WHITE='\e[37m'
+
+# Define background colors
+BG_RED='\e[41m'
+BG_GREEN='\e[42m'
+BG_YELLOW='\e[43m'
+BG_BLUE='\e[44m'
+BG_MAGENTA='\e[45m'
+BG_CYAN='\e[46m'
+BG_WHITE='\e[47m'
+
+# Text attributes
+BOLD='\e[1m'
+UNDERLINE='\e[4m'
+RESET='\e[0m' 
+
+
+
+
+
+function SelectAllTable() {
+    parentDir="Databases"
+    database="db2"
+    fullPath="$parentDir/$database"
+
+
+    listOfTables=($(find "$fullPath" -maxdepth 1 -type f ! -name "*MetaData*" -exec basename {} \;))
+    
+    if [[ ${#listOfTables[@]} -eq 0 ]]; then
+        echo "${YELLOW}No tables found in the database."
+        return
+    fi
+
+    echo -e "${GREEN}Select Table:${MAGENTA}"
+    
+    echo -e "${CYAN} Do you want to select entire table or a single row by ID?"
+    
+    PS3="Enter your choice ==> "
+    select table in "${listOfTables[@]}"; do
+        if [[ -n "$table" && -f "$fullPath/$table" ]]; then
+            if [[ ! -s "$fullPath/$table" ]]; then
+                echo -e "${YELLOW}The table is empty.${GREEN}"
+            else
+                column -t -s "," "$fullPath/$table"
+            fi
+            break
+        else
+            echo -e "${YELLOW}Invalid Choice. Please select a valid table.${MAGENTA}"
+        fi
+    done
+}
+
+
+
+SelectAllTable
+
+
+
+#echo "$insertedRecord" >> "$tableName"
+#echo -e "✅ Record added successfully!\n"
+
+
+#echo "Table after adding the new record:"
+#column -t -s "," "$tableName"
+
+#ne3melha fi function
+#list el tables ==> aka the files inside the database
+#a-make sure the tables are not the metadata tables ==> mmkn n3melha using regex 3ala el filename
+## b3den nkhally el user y-pick a number aw y-select the filename
+## law el file empty ==> echo table is empty
+## else ==> use column -t -s 
+
