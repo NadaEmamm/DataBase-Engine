@@ -25,37 +25,57 @@ function InsertIntoTable() {
 
     columnNames=()
     dataTypes=()
-    primaryKeys=()
+    declare -A primaryKey
     
     while IFS=":" read -r colName dataType pk; do
         columnNames+=("$colName")
         dataTypes+=("$dataType")
         if [[ "$pk" =~ PK ]]; then
-            primaryKeys+=("$colName")
+            primaryKey["$colName"]="$((index+1))"
+            pk_columnNumber="$((index+1))"
+            pk_type="$dataType"
+            primaryKeyIndex="$index"
         fi
     done < "${tableName}-MetaData"
     
-    echo "Primary Key(s): ${primaryKeys[*]}"
+     for key in "${!primaryKey[@]}"; do
+    	echo "Primary Key: $key => ${primaryKey[$key]}"
+    	echo $pk_type
+    	echo $((pk_columnNumber-1))
+    done
 
     validate_input() {
         local value="$1"
         local type="$2"
         value=$(echo "$value" | xargs)
         type=$(echo "$type" | xargs)
-        echo "$type"
+        #echo "$type"
         if [ "$type" = "string" ]; then
             if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
-                echo "Invalid Input"
+                #echo "Invalid Input"
                 return 1 
             fi
         elif [ "$type" = "number" ]; then
             if [[ ! "$value" =~ ^[0-9]+$ ]]; then
-                echo "Invalid Input"
+                #echo "Invalid Input"
                 return 1 
             fi
         fi
-        echo "Valid input"
+        #echo "Valid input"
         return 0  
+    }
+    
+    validate_unique_pk(){
+    	local pkValue="$1"
+    	local tableFile="$2"
+	local colIndex="$3"
+
+	    
+	if awk -F: -v pk="$pkValue" -v col="$colIndex" '$(col+1) == pk {exit 1}' "$tableFile"; then
+		return 0  
+	else
+		return 1  
+	fi
     }
 
     while true; do
@@ -75,6 +95,14 @@ function InsertIntoTable() {
                 break  
             fi
         done
+        	primaryKeyValue="${insertedValues[$((pk_columnNumber-1))]}"
+
+    
+	    if ! validate_unique_pk "$primaryKeyValue" "$tableName" "$((pk_columnNumber-1))"; then
+		echo -e "${RED}❌ Error: Primary key $primaryKeyValue already exists. It must be unique.${RESET}"
+		continue
+	    fi
+
 
         if [ "$valid" -eq 1 ]; then
             echo "$insertedRecord" >> "$tableName"
