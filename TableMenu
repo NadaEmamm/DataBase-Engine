@@ -42,30 +42,220 @@ function createTable() {
             fi
           if [[ $colBK == "yes" ]]
           then
-          echo  "${colNames[$i]} : ${colTypes[$i]} : PK " >> "$Dname"-MetaData  
+          echo  "${colNames[$i]}:${colTypes[$i]}:PK" >> "$Dname"-MetaData  
           else
-          echo  "${colNames[$i]} : ${colTypes[$i]} " >> "$Dname"-MetaData  
+          echo  "${colNames[$i]}:${colTypes[$i]}" >> "$Dname"-MetaData  
           fi
-          echo -n " ${colNames[$i]} :" >> "$Dname"
+          echo -n "${colNames[$i]}:" >> "$Dname"
           # -n to skip new line
         done
 
         echo "Table '$Dname' is created "
     fi
+    TableMenu
 }
 
 
 function listTables(){
 ls $pwd
+TableMenu
 }
 
 function dropTables(){
-        read -p "Please Enter Table Name : " colName
-        if [[ -f $colName ]]
+ls $pwd
+        read -p "Please Enter Table Name : " tableName
+        if [[ -f $tableName ]]
         then 
-        rm $colName
-        echo " $colName Table has been deleted."
+        rm $tableName
+        rm $tableName-MetaData
+        echo " $tableName Table has been deleted."
         else
         echo "The Table Dose't Exists"
         fi
+        TableMenu
+}
+
+ function updateTable() {
+   ls $pwd
+    read -p "Please Enter Table name: " Tname
+    if [[ ! -f $Tname ]]; then
+        echo "Table doesn't exist."
+        return
+    fi
+awk '{ print $0 }' $Tname
+read -p "Please Enter id: " rowNum
+while [[ -z "$rowNum" ]]; do
+echo "Error: ID cannot be empty. Please Enter a valid ID."
+read -p "Please Enter id: " rowNum
+done
+
+idExists=$(checkId)
+while [[ -z "$idExists" ]]; do
+echo "Error: ID '$rowNum' does not exist in the table."
+read -p "Please Enter id: " rowNum
+idExists=$(checkId)
+ done
+#======================================== done
+
+read -p "Please Enter column Name: " colName
+colNum=$(checkColName)
+while [[ -z "$colNum" ]]; do
+    echo "Error: Column '$colName' does not exist in the table."
+    read -p "Please Enter column Name: " colName  
+colNum=$(checkColName)
+done
+
+#============================================================= done
+read -p "Please insert new data: " newData
+newData=$(echo "$newData" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+isPK=$(awk -v col_name="$colName" -F":" '
+    {   
+        gsub(/^ *| *$/, "", $1)
+        gsub(/^ *| *$/, "", $3)
+        if ($1 == col_name && $3=="PK") {
+            print "PK"
+        }
+    }' $Tname-MetaData)
+
+if [[ ! -z "$isPK" ]]; then
+    valueExists=$(checkUniqe)
+  
+    while [[ ! -z "$valueExists" ]]; do
+        echo "Error: The value '$newData' already exists in the '$colNum' column (which is a unique key)."
+        read -p "Please insert new data: " newData
+       valueExists=$(checkUniqe)
+    done
+fi
+#========================================================== doneeeeeeeeeeeeeeeeee
+
+colType=$(awk -v colName="$colName" -F":" '
+
+    $1 == colName {
+        gsub(/^ *| *$/, "", $2);  
+        print $2; 
+        exit
+    }
+'  $Tname-MetaData)
+
+colType=$(echo "$colType" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+case "$colType" in
+    "Number")
+        newData=$(echo "$newData" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        while [[ ! "$newData" =~ ^[0-9]+$ ]]; do
+            echo "Error: The value must be a number for column '$colName'."
+            read -p "Please insert new data: " newData
+            newData=$(echo "$newData" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        done
+        ;;
+    "String")
+        newData=$(echo "$newData" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        while [[ ! "$newData" =~ ^[a-zA-Z_[:space:]]+$ ]]; do
+            echo "Error: The value must only contain letters, numbers, underscores, and spaces for column '$colName'."
+            read -p "Please insert new data: " newData
+            newData=$(echo "$newData" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        done
+        ;;
+    *)
+        echo "Error: Unsupported colType '$colType'."
+        ;;
+esac
+
+awk -v search_id="$rowNum" -v col_num="$colNum" -v new_data="$newData" -F ":" ' 
+BEGIN { OFS=":" }  
+{
+    gsub(/^ *| *$/, "", $1);  
+    if ($1 == search_id) {
+        $col_num = new_data;  
+    }
+    print $0;
+}' "$Tname" > temp_file && mv temp_file "$Tname"
+
+echo "Data updated successfully."
+    awk '{ print $0 }' $Tname
+
+TableMenu
+}
+function checkId(){
+idExists=$(awk -F: -v search_id="$rowNum" 'NR >= 2{
+	 if ($1 == search_id) {
+	print NR; 
+	exit  
+	   }
+}' "$Tname")
+	 echo "$idExists"
+}
+	    
+function checkColName(){
+colNum=$(awk -v colName="$colName" -F":" 'NR == 1 {
+    gsub(/^ *| *$/, "", colName)
+    for (i = 1; i <= NF; i++) {
+        if ($i == colName) {
+            print i
+            exit
+        }
+    }
+}' "$Tname")
+
+	 echo "$colNum"
+  }
+	    
+function checkUniqe(){
+ valueExists=$(awk -v colNum="$colNum" -v newData="$newData" -F":" '
+        NR > 1 {   
+            gsub(/^ *| *$/, "", $colNum)  
+            gsub(/^ *| *$/, "", newData)  
+            if ($colNum == newData) {
+                print "value_exists"
+                exit
+            }
+        }' $Tname)
+	 echo "$valueExists"
+}
+
+function TableMenu () {
+echo "Select an option:"
+select choice in "Create Table" "List Tables" "Drop Table" "Insert into Table" "Select From Table" "Delete From Table" "Update Table" "Back to main menu"; 
+do
+    case $choice in
+        "Create Table")
+        createTable  
+            ;;
+        
+        "List Tables")
+            echo "You chose to List Tables"
+
+            listTables
+            ;;
+        
+        "Drop Table")
+            dropTables 
+            ;;
+        
+        "Insert into Table")
+            insertIntoTable "$tableName" "$columns" "$values"
+            ;;
+        
+        "Select From Table")
+            selectFromTable "$tableName"
+            ;;
+        
+        "Delete From Table")
+        
+            deleteFromTable "$tableName" "$condition"
+            ;;
+        "Update Table")
+            updateTable 
+            ;;
+        
+        "Back to main menu")
+        cd ~/Project
+            mainManu
+            break
+            ;;
+        
+        *)
+            echo "Not a valid option, please try again."
+            ;;
+    esac
+done
 }

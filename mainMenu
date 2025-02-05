@@ -1,7 +1,31 @@
 #! /usr/bin/bash
 shopt -s extglob
+. ./TableMenu
+# Define text colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+BLUE='\e[34m'
+MAGENTA='\e[35m'
+CYAN='\e[36m'
+WHITE='\e[37m'
 
+# Define background colors
+BG_RED='\e[41m'
+BG_GREEN='\e[42m'
+BG_YELLOW='\e[43m'
+BG_BLUE='\e[44m'
+BG_MAGENTA='\e[45m'
+BG_CYAN='\e[46m'
+BG_WHITE='\e[47m'
+
+# Text attributes
+BOLD='\e[1m'
+UNDERLINE='\e[4m'
+RESET='\e[0m' 
+parentDir="Databases"
 function createDataBase(){
+cd Databases
 read -p "Please Enter Database name: " Dname
 if [[ -d $Dname ]]
 then
@@ -13,11 +37,64 @@ else
 mkdir "$Dname"
 echo Database is created 
 fi
+cd ..
+echo "=================================================="
 }
 function listDataBase(){
-find ~/Project -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
+find  ~/Project/Databases -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
+echo "=================================================="
 }
-# استخدمنا find عشان هي افضل من اللوب لما يكون عندي اسم مكون من جزئين "nada emam" ف بالتالي هي بتعرف تهندل المسافات
-# استخدمنا mindepth مع  max عشان يحبلنا المجلدات الفرعيه بس يعني ميعرضليش بردو معاهم اسم Project واستخدمنا max عشان ميجبلناش المجلدت اللي جوا المجلدات الفرعيه 
+function ConnectToDB()
+ {		
+
+ 	echo -e "${UNDERLINE}${BOLD}${MAGENTA}Select database:${RESET}"
+ 	listOfDBs=$(ls "Databases")
+ 	arrayOfDB=($listOfDBs)
+ 	#arrayOfDB=($(ls))
+ 	PS3="Please enter your choice: "
+ 	select database in "${arrayOfDB[@]}" "Exit"
+	do
+	    if [[ $database == "Exit" ]]; then
+		echo "Exiting..."
+		break
+	    elif [[ -n $database ]]; then
+		echo "Connecting to database: $database"
+		#fullPath=$PWD/$parentDir/$database	
+		#cd $fullpath
+	
+	     cd $PWD/$parentDir/$database	
+	       TableMenu
+		break
+	    else
+		echo "Invalid choice. Try again."
+	    fi
+	done
+	echo "=================================================="
+ }
+ 
+function DropDatabase()
+ {
+ pwd
+ 	echo -e "${UNDERLINE}${BOLD}${MAGENTA}Select database:${RESET}"
+ 	listOfDBs=$(ls "Databases" )
+ 	arrayOfDB=($listOfDBs)
+ 	#arrayOfDB=($(ls ))
+ 	PS3="Please enter your choice: "
+ 	select database in "${arrayOfDB[@]}" "Exit"
+	do
+	    if [[ $database == "Exit" ]]; then
+		echo "Exiting..."
+		break
+	    elif [[ -n $database ]]; then
+		echo "Dropping the database: $database"
+		#fullPath="$parentDir/$database"
+		rm -r $PWD/Databases/$database
+		break
+	    else
+		echo "Invalid choice. Try again."
+	    fi
+	done	
+		echo "=================================================="
+}
 
 

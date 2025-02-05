@@ -1,6 +1,0 @@
-#!/usr/bin/bash
-
-id : number : PK
-name : string : 
-age : number : 
-
