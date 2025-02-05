@@ -1,68 +1,88 @@
 #!/usr/bin/bash
 
-shopt -s extglob
+# Define text colors
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+CYAN='\e[36m'
+RESET='\e[0m'
 
 parentDir="Databases"
 
-read -p "Enter table name: " tableName
-database="db2"
-fullPath="$parentDir/$database"
+shopt -s extglob
 
-cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
-while [[ ! -f "$tableName" ]]; do
-    echo "Error: Table does not exist!"
+function InsertIntoTable() {
     read -p "Enter table name: " tableName
-done
-columnNames=()
-dataTypes=()
+    database="db2"
+    fullPath="$parentDir/$database"
 
-while IFS=' : ' read -r colName dataType pk; do
-    columnNames+=("$colName")
-    dataTypes+=("$dataType")
-done < "${tableName}-MetaData"
+    cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
 
-read -p "Insert the data comma separated: " insertedRecord
+    while [[ ! -f "$tableName" ]]; do
+        echo -e "${RED}❌ Error: Table does not exist!${RESET}"
+        read -p "Enter table name: " tableName
+    done
 
-
-IFS="," read -r -a userValues <<< "$insertedRecord"
-
-
-while [[ ${#userValues[@]} -ne ${#dataTypes[@]} ]]; do
-    echo "Error: Mismatched number of values. Expected ${#dataTypes[@]} fields."
-    read -p "Insert the data comma separated: " insertedRecord
-    IFS="," read -r -a userValues <<< "$insertedRecord"
+    columnNames=()
+    dataTypes=()
+    primaryKeys=()
     
-done
+    while IFS=":" read -r colName dataType pk; do
+        columnNames+=("$colName")
+        dataTypes+=("$dataType")
+        if [[ "$pk" =~ PK ]]; then
+            primaryKeys+=("$colName")
+        fi
+    done < "${tableName}-MetaData"
+    
+    echo "Primary Key(s): ${primaryKeys[*]}"
 
+    validate_input() {
+        local value="$1"
+        local type="$2"
+        value=$(echo "$value" | xargs)
+        type=$(echo "$type" | xargs)
+        echo "$type"
+        if [ "$type" = "string" ]; then
+            if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
+                echo "Invalid Input"
+                return 1 
+            fi
+        elif [ "$type" = "number" ]; then
+            if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+                echo "Invalid Input"
+                return 1 
+            fi
+        fi
+        echo "Valid input"
+        return 0  
+    }
 
-validate_type() {
-    local value=$1
-    local type=$2
+    while true; do
+        read -p "$(echo -e "${CYAN}Insert the data colon-separated in this order: ${columnNames[*]} ==> ${RESET}")" insertedRecord
+        IFS=':' read -r -a insertedValues <<< "$insertedRecord"
 
-    case "$type" in
-        number)    [[ "$value" =~ ^[0-9]+$ ]] || return 1 ;;
-        string) [[ "$value" =~ ^[a-zA-Z0-9_ ]+$ ]] || return 1 ;;
-        *)      echo "Error: Unknown data type '$type'"; return 1 ;;
-    esac
+        if [ "${#insertedValues[@]}" -ne "${#columnNames[@]}" ]; then
+            echo -e "${RED}❌ Error: You entered ${#insertedValues[@]} values, but ${#columnNames[@]} are expected.${RESET}"
+            continue
+        fi
 
-    return 0
+        valid=1 
+        for i in "${!columnNames[@]}"; do
+            if ! validate_input "${insertedValues[i]}" "${dataTypes[i]}"; then
+                echo -e "${RED}❌ Invalid input for field $((i+1)) ==> It should be a ${dataTypes[i]}${RESET}"
+                valid=0
+                break  
+            fi
+        done
+
+        if [ "$valid" -eq 1 ]; then
+            echo "$insertedRecord" >> "$tableName"
+            echo -e "${GREEN}✅ Record added successfully!${RESET}\n"
+            break
+        fi
+    done
 }
 
-
-for i in "${!userValues[@]}"; do
-    value="${userValues[$i]}"
-    type="${dataTypes[$i]}"
-
-    if ! validate_type "$value" "$type"; then
-        echo "Error: Invalid value '$value' for column '${columnNames[$i]}' (expected $type)"
-        exit 1
-    fi
-done
-
-echo "$insertedRecord" >> "$tableName"
-echo -e "✅ Record added successfully!\n"
-
-
-echo "Table after adding the new record:"
-column -t -s "," "$tableName"
+InsertIntoTable
 
