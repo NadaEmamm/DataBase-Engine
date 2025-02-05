@@ -175,6 +175,80 @@ echo "Data updated successfully."
 
 TableMenu
 }
+function InsertIntoTable() {
+
+    read -p "Enter table name: " tableName
+   # database="db2"
+   # fullPath="$parentDir/$database"
+
+   # cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
+
+    while [[ ! -f "$tableName" ]]; do
+        echo -e "${RED}❌ Error: Table does not exist!${RESET}"
+        read -p "Enter table name: " tableName
+    done
+
+    columnNames=()
+    dataTypes=()
+    primaryKeys=()
+    
+    while IFS=":" read -r colName dataType pk; do
+        columnNames+=("$colName")
+        dataTypes+=("$dataType")
+        if [[ "$pk" =~ PK ]]; then
+            primaryKeys+=("$colName")
+        fi
+    done < "${tableName}-MetaData"
+    
+    echo "Primary Key(s): ${primaryKeys[*]}"
+
+    validate_input() {
+        local value="$1"
+        local type="$2"
+        value=$(echo "$value" | xargs)
+        type=$(echo "$type" | xargs)
+        echo "$type"
+        if [ "$type" = "string" ]; then
+            if [[ ! "$value" =~ ^[a-zA-Z]+$ ]]; then
+                echo "Invalid Input"
+                return 1 
+            fi
+        elif [ "$type" = "number" ]; then
+            if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+                echo "Invalid Input"
+                return 1 
+            fi
+        fi
+        echo "Valid input"
+        return 0  
+    }
+
+    while true; do
+        read -p "$(echo -e "${CYAN}Insert the data colon-separated in this order: ${columnNames[*]} ==> ${RESET}")" insertedRecord
+        IFS=':' read -r -a insertedValues <<< "$insertedRecord"
+
+        if [ "${#insertedValues[@]}" -ne "${#columnNames[@]}" ]; then
+            echo -e "${RED}❌ Error: You entered ${#insertedValues[@]} values, but ${#columnNames[@]} are expected.${RESET}"
+            continue
+        fi
+
+        valid=1 
+        for i in "${!columnNames[@]}"; do
+            if ! validate_input "${insertedValues[i]}" "${dataTypes[i]}"; then
+                echo -e "${RED}❌ Invalid input for field $((i+1)) ==> It should be a ${dataTypes[i]}${RESET}"
+                valid=0
+                break  
+            fi
+        done
+
+        if [ "$valid" -eq 1 ]; then
+            echo "$insertedRecord" >> "$tableName"
+            echo -e "${GREEN}✅ Record added successfully!${RESET}\n"
+            break
+        fi
+    done
+    TableMenu
+}
 function checkId(){
 idExists=$(awk -F: -v search_id="$rowNum" 'NR >= 2{
 	 if ($1 == search_id) {
@@ -232,7 +306,7 @@ do
             ;;
         
         "Insert into Table")
-            insertIntoTable "$tableName" "$columns" "$values"
+            InsertIntoTable "$tableName" "$columns" "$values"
             ;;
         
         "Select From Table")

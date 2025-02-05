@@ -13,10 +13,10 @@ shopt -s extglob
 
 function InsertIntoTable() {
     read -p "Enter table name: " tableName
-    database="db2"
-    fullPath="$parentDir/$database"
+   # database="db2"
+   # fullPath="$parentDir/$database"
 
-    cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
+   # cd "$fullPath" || { echo "Error: Database directory not found!"; exit 1; }
 
     while [[ ! -f "$tableName" ]]; do
         echo -e "${RED}❌ Error: Table does not exist!${RESET}"
