@@ -41,7 +41,7 @@ cd ..
 echo "=================================================="
 }
 function listDataBase(){
-find  ~/Project/Databases -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
+find  ~/DataBase-Engine/Databases -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
 echo "=================================================="
 }
 function ConnectToDB()
